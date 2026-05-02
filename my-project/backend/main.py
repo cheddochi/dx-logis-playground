@@ -5,7 +5,12 @@ app = FastAPI(title="My API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://my-project-vue.onrender.com",
+        "https://my-project-react-mhgj.onrender.com",
+        "http://localhost:5173",   # Vue 로컬 개발
+        "http://localhost:5174",   # React 로컬 개발
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
