@@ -22,17 +22,19 @@ export default function App() {
     }
   }
 
-  const fetchItems = async () => {
-    try {
-      setLoading(true)
-      const res = await fetch(`${API}/items`)
-      setItems(await res.json())
-    } catch (e) {
-      setError(`API 오류: ${e.message}`)
-    } finally {
-      setLoading(false)
-    }
+const fetchItems = async () => {
+  try {
+    setLoading(true)
+    const res  = await fetch(`${API}/items`)
+    const data = await res.json()
+    setItems(Array.isArray(data) ? data : [])       // ← 방어 코드
+    if (!Array.isArray(data)) setError(`API 응답 오류: ${JSON.stringify(data)}`)
+  } catch (e) {
+    setError(`API 오류: ${e.message}`)
+  } finally {
+    setLoading(false)
   }
+}
 
   const addItem = async () => {
     await fetch(`${API}/items`, {

@@ -56,8 +56,10 @@ async function checkDB() {
 async function fetchItems() {
   try {
     loading.value = true
-    const res = await fetch(`${API}/items`)
-    items.value = await res.json()
+    const res  = await fetch(`${API}/items`)
+    const data = await res.json()
+    items.value = Array.isArray(data) ? data : []   // ← 방어 코드
+    if (!Array.isArray(data)) error.value = `API 응답 오류: ${JSON.stringify(data)}`
   } catch (e) {
     error.value = `API 오류: ${e.message}`
   } finally {
