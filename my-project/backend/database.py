@@ -6,7 +6,6 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# 연결 풀 (앱 시작 시 생성, 종료 시 해제)
 pool = None
 
 async def get_pool():
@@ -16,7 +15,8 @@ async def get_pool():
             DATABASE_URL,
             min_size=1,
             max_size=10,
-            ssl="require"        # Supabase 필수
+            ssl="require",
+            statement_cache_size=0    # ← 추가된 부분
         )
     return pool
 
