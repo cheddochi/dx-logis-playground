@@ -1,26 +1,44 @@
-import os
-import asyncpg
-from dotenv import load_dotenv
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.orm import DeclarativeBase
+from pydantic_settings import BaseSettings
+from functools import lru_cache
 
-load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+class Settings(BaseSettings):
+    database_url: str = "postgresql+asyncpg://postgres:password@localhost:5432/ecommerce_forecast"
+    anthropic_api_key: str = ""
+    allowed_origins: str = "http://localhost:5173,http://localhost:3000"
 
-pool = None
+    class Config:
+        env_file = ".env"
 
-async def get_pool():
-    global pool
-    if pool is None:
-        pool = await asyncpg.create_pool(
-            DATABASE_URL,
-            min_size=1,
-            max_size=10,
-            ssl="require",
-            statement_cache_size=0    # ← 추가된 부분
-        )
-    return pool
 
-async def close_pool():
-    global pool
-    if pool:
-        await pool.close()
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+def create_engine():
+    settings = get_settings()
+    return create_async_engine(
+        settings.database_url,
+        pool_size=10,
+        max_overflow=20,
+        echo=False,
+    )
+
+
+engine = create_engine()
+AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+
+async def get_db() -> AsyncSession:
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
