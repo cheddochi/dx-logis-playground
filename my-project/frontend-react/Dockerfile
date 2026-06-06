@@ -1,13 +1,13 @@
-FROM node:18-alpine
-
+# Build stage
+FROM node:18-alpine AS builder
 WORKDIR /app
-
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
-RUN npm install -g serve
-
 COPY . .
 RUN npm run build
 
-EXPOSE 3000
-CMD ["sh", "-c", "serve -s dist -l ${PORT:-3000}"]
+# Production stage with nginx proxy
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+CMD ["sh", "-c", "envsubst '$PORT' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
