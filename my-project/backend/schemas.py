@@ -102,3 +102,28 @@ class SavedParamsOut(BaseModel):
 class ReportRequest(BaseModel):
     prediction: PredictionResponse
     api_key: Optional[str] = None     # AI 보고서 생성 시 사용
+
+
+# -- AX Projects ----------------------------------------------------------
+class AXProjectBase(BaseModel):
+    name: str
+    slug: str
+    description: Optional[str] = None
+    developer: Optional[str] = None
+
+class AXProjectCreate(AXProjectBase):
+    pass
+
+class AXProjectUpdate(BaseModel):
+    name: Optional[str] = None
+    slug: Optional[str] = None
+    description: Optional[str] = None
+    developer: Optional[str] = None
+
+class AXProjectOut(AXProjectBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
