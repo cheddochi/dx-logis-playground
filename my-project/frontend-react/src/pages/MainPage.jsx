@@ -4,7 +4,6 @@ import { listAxProjects, createAxProject, updateAxProject, deleteAxProject } fro
 import '../styles/ax-main.css'
 
 const emptyForm = { name: '', slug: '', description: '', developer: '' }
-const ICONS = ['🤖', '📊', '🔮', '🧠', '⚡', '🎯', '💡', '🚀', '📈', '🛰️']
 
 function toSlug(str) {
   return str
@@ -14,10 +13,50 @@ function toSlug(str) {
     .replace(/^-+|-+$/g, '')
 }
 
-function fmt(dateStr) {
-  if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
-}
+// 신규 과제 등록 가이드 단계 정의
+const GUIDE_STEPS = [
+  {
+    step: '1',
+    title: 'DB에 과제 등록',
+    color: '#1bc6c6',
+    desc: '이 페이지의 "＋ 과제 등록" 버튼으로 과제를 추가합니다.',
+    detail: [
+      '과제명: 사람이 읽는 이름 (예: 전자상거래 수출입 예측 시스템)',
+      'slug: URL에 사용되는 식별자 — 영문 소문자·숫자·하이픈(-) 만 가능 (예: ecommerce-prediction)',
+      '슬러그를 기준으로 /ax/{slug} URL이 자동 생성됩니다.',
+      '기본 상세 페이지로 충분하면 Step 2·3은 생략해도 됩니다.',
+    ],
+  },
+  {
+    step: '2',
+    title: 'FE 커스텀 페이지 추가 (선택)',
+    color: '#4a9eff',
+    desc: '대시보드·차트 등 전용 UI가 필요할 때만 진행합니다.',
+    detail: [
+      '① src/ax_projects/_template/index.jsx를 복사해서',
+      '   src/ax_projects/{slug}/index.jsx 로 저장',
+      '② App.jsx 상단 import 블록에 추가:',
+      '   import MyApp from \'./ax_projects/{slug}\'',
+      '③ App.jsx 라우트 블록에 추가 (주석 안내 참고):',
+      '   <Route path="/ax/{slug}/*" element={<MyApp />} />',
+    ],
+    code: true,
+  },
+  {
+    step: '3',
+    title: 'BE API 추가 (선택)',
+    color: '#f6c90e',
+    desc: '과제 전용 백엔드 API가 필요할 때만 진행합니다.',
+    detail: [
+      '① backend/routers/ 에 {slug}_router.py 생성',
+      '   → 기존 ax_projects_router.py 참고하여 작성',
+      '② backend/main.py 에 router 등록:',
+      '   from routers.{slug}_router import router as {slug}_router',
+      '   app.include_router({slug}_router, prefix="/api/{slug}", tags=["{slug}"])',
+    ],
+    code: true,
+  },
+]
 
 export default function MainPage() {
   const [projects, setProjects] = useState([])
@@ -27,12 +66,13 @@ export default function MainPage() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [guideOpen, setGuideOpen] = useState(false)
 
   const load = () => {
     setLoading(true)
     listAxProjects()
       .then(setProjects)
-      .catch(() => setError('프로젝트 불러오기에 실패했습니다.'))
+      .catch(() => setError('목록을 불러오는 데 실패했습니다.'))
       .finally(() => setLoading(false))
   }
 
@@ -61,10 +101,8 @@ export default function MainPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.name.trim()) { setError('과제명을 입력하세요.'); return }
-    if (!form.slug.trim()) { setError('슬러그를 입력하세요.'); return }
+    if (!form.name.trim() || !form.slug.trim()) { setError('과제명과 슬러그는 필수입니다.'); return }
     setSaving(true)
-    setError('')
     try {
       if (editTarget) {
         await updateAxProject(editTarget.id, form)
@@ -74,7 +112,7 @@ export default function MainPage() {
       closeModal()
       load()
     } catch (err) {
-      setError(err.message || '저장에 실패했습니다.')
+      setError(err.response?.data?.detail || '저장에 실패했습니다.')
     } finally {
       setSaving(false)
     }
@@ -86,93 +124,130 @@ export default function MainPage() {
       await deleteAxProject(p.id)
       load()
     } catch {
-      alert('삭제에 실패했습니다.')
+      setError('삭제에 실패했습니다.')
     }
   }
 
+  const fmt = (iso) => iso ? new Date(iso).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' }) : '-'
+
   return (
-    <div className="ax-wrap">
-      <header className="ax-gnb">
-        <a href="/" className="ax-gnb-logo">
-          <span className="ax-gnb-badge">AX</span>
-          AI Transformation
-        </a>
-        <div className="ax-gnb-spacer" />
-        <button className="ax-gnb-btn" onClick={openCreate}>+ 과제 등록</button>
+    <div className="ax-container">
+      <header className="ax-header">
+        <div className="ax-header-title">
+          <span className="ax-badge">AX</span>
+          AX 과제 관리 시스템
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            className="ax-btn-guide"
+            onClick={() => setGuideOpen(o => !o)}
+            title="신규 과제 등록 방법"
+          >
+            {guideOpen ? '✕ 가이드 닫기' : '📖 개발자 가이드'}
+          </button>
+          <button className="ax-btn-primary" onClick={openCreate}>＋ 과제 등록</button>
+        </div>
       </header>
 
-      <div className="ax-body">
-        <aside className="ax-sidebar">
-          <div className="ax-sidebar-title">AX 과제</div>
-          <ul className="ax-sidebar-nav">
-            {projects.map((p) => (
-              <li key={p.id}>
-                <Link to={`/ax/${p.slug}`}>{p.name}</Link>
-              </li>
-            ))}
-          </ul>
-        </aside>
-
-        <main className="ax-main">
-          <div className="ax-page-head">
-            <h1>AX 과제 관리<span className="ax-count-badge">{projects.length}개</span></h1>
-            <p>AI Transformation 과제를 등록하고 관리합니다.</p>
-          </div>
-
-          {loading && <p className="ax-loading">불러오는 중...</p>}
-
-          {!loading && (
-            <div className="ax-grid">
-              {projects.map((p, i) => (
-                <div className="ax-card" key={p.id}>
-                  <div className="ax-card-icon">{ICONS[i % ICONS.length]}</div>
-                  <Link to={`/ax/${p.slug}`} className="ax-card-name">{p.name}</Link>
-                  <p className="ax-card-desc">{p.description || '과제 설명이 없습니다.'}</p>
-                  <div className="ax-card-meta">
-                    <span className="ax-card-developer">{p.developer || '-'}</span>
-                    <span className="ax-card-date">{fmt(p.created_at)}</span>
-                  </div>
-                  <div className="ax-card-actions">
-                    <button className="ax-btn-sm" onClick={() => openEdit(p)}>수정</button>
-                    <button className="ax-btn-sm danger" onClick={() => handleDelete(p)}>삭제</button>
+      {/* ── 개발자 가이드 패널 ── */}
+      {guideOpen && (
+        <div className="ax-guide-panel">
+          <h3 className="ax-guide-title">신규 AX 과제 등록 방법</h3>
+          <p className="ax-guide-subtitle">
+            과제를 DB에 등록하면 목록과 기본 상세 페이지가 자동으로 생성됩니다.<br />
+            전용 대시보드·API가 필요할 때만 Step 2·3을 진행하세요.
+          </p>
+          <div className="ax-guide-steps">
+            {GUIDE_STEPS.map(s => (
+              <div key={s.step} className="ax-guide-step">
+                <div className="ax-guide-step-header">
+                  <span className="ax-guide-step-num" style={{ background: s.color }}>{s.step}</span>
+                  <div>
+                    <div className="ax-guide-step-title">{s.title}</div>
+                    <div className="ax-guide-step-desc">{s.desc}</div>
                   </div>
                 </div>
+                <ul className={s.code ? 'ax-guide-code' : 'ax-guide-list'}>
+                  {s.detail.map((d, i) => (
+                    <li key={i}>{d}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="ax-guide-footer">
+            💡 <strong>slug 규칙:</strong> 영문 소문자·숫자·하이픈(-) 만 사용 &nbsp;|&nbsp;
+            📁 <strong>템플릿:</strong> <code>src/ax_projects/_template/index.jsx</code> 복사 후 사용 &nbsp;|&nbsp;
+            🔀 <strong>라우트 순서:</strong> static route를 /ax/:slug 보다 반드시 위에 배치
+          </div>
+        </div>
+      )}
+
+      {error && <div className="ax-error">{error}</div>}
+
+      {loading ? (
+        <div className="ax-loading">불러오는 중...</div>
+      ) : (
+        <div className="ax-table-wrap">
+          <table className="ax-table">
+            <thead>
+              <tr>
+                <th>과제명</th>
+                <th>과제설명</th>
+                <th>개발자</th>
+                <th>등록일시</th>
+                <th>업데이트일시</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projects.length === 0 ? (
+                <tr><td colSpan={6} style={{ textAlign: 'center', color: '#8b949e' }}>등록된 과제가 없습니다.</td></tr>
+              ) : projects.map(p => (
+                <tr key={p.id}>
+                  <td>
+                    <Link to={`/ax/${p.slug}`} className="ax-link">{p.name}</Link>
+                  </td>
+                  <td className="ax-desc">{p.description || '-'}</td>
+                  <td>{p.developer || '-'}</td>
+                  <td>{fmt(p.created_at)}</td>
+                  <td>{fmt(p.updated_at)}</td>
+                  <td className="ax-actions">
+                    <button className="ax-btn-sm" onClick={() => openEdit(p)}>수정</button>
+                    <button className="ax-btn-sm ax-btn-danger" onClick={() => handleDelete(p)}>삭제</button>
+                  </td>
+                </tr>
               ))}
-            </div>
-          )}
-        </main>
-      </div>
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {modalOpen && (
         <div className="ax-modal-overlay" onClick={closeModal}>
           <div className="ax-modal" onClick={e => e.stopPropagation()}>
-            <div className="ax-modal-header">
-              <h2>{editTarget ? '과제 수정' : '과제 등록'}</h2>
-              <button className="ax-modal-close" onClick={closeModal}>✕</button>
-            </div>
+            <h2>{editTarget ? '과제 수정' : '과제 등록'}</h2>
             <form onSubmit={handleSubmit}>
-              <div className="ax-form-group">
-                <label>과제명 *</label>
-                <input type="text" value={form.name} onChange={handleNameChange} placeholder="예: 이커머스 수요 예측" required />
-              </div>
-              <div className="ax-form-group">
-                <label>슬러그 *</label>
-                <input type="text" value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} placeholder="예: ecommerce-prediction" required />
-              </div>
-              <div className="ax-form-group">
-                <label>설명</label>
-                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="과제에 대한 간략한 설명" rows={3} />
-              </div>
-              <div className="ax-form-group">
-                <label>담당자</label>
-                <input type="text" value={form.developer} onChange={e => setForm(f => ({ ...f, developer: e.target.value }))} placeholder="예: 홍길동" />
-              </div>
-              {error && <p className="ax-error">{error}</p>}
+              <label>
+                과제명 *
+                <input value={form.name} onChange={handleNameChange} placeholder="전자상거래 수출입 예측 시스템" required />
+              </label>
+              <label>
+                슬러그 * <span style={{ fontSize: '0.75rem', color: '#8b949e' }}>(URL 경로: /ax/슬러그)</span>
+                <input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} placeholder="ecommerce-prediction" required />
+              </label>
+              <label>
+                과제설명
+                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="과제에 대한 간단한 설명" />
+              </label>
+              <label>
+                개발자
+                <input value={form.developer} onChange={e => setForm(f => ({ ...f, developer: e.target.value }))} placeholder="홍길동" />
+              </label>
+              {error && <div className="ax-error">{error}</div>}
               <div className="ax-modal-footer">
-                <button type="button" className="ax-btn-cancel" onClick={closeModal}>취소</button>
-                <button type="submit" className="ax-btn-save" disabled={saving}>
-                  {saving ? '저장 중...' : (editTarget ? '수정 완료' : '등록')}
-                </button>
+                <button type="button" className="ax-btn-sm" onClick={closeModal}>취소</button>
+                <button type="submit" className="ax-btn-primary" disabled={saving}>{saving ? '저장 중...' : '저장'}</button>
               </div>
             </form>
           </div>
