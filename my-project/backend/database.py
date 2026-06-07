@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
@@ -32,8 +33,7 @@ def create_engine():
 
     return create_async_engine(
         db_url,
-        pool_size=10,
-        max_overflow=20,
+        poolclass=NullPool,   # pgbouncer transaction mode 호환
         echo=False,
         connect_args={
             "ssl": "require",
