@@ -1,0 +1,266 @@
+/* AX 과제 관리 메인 페이지 스타일 */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.ax-container {
+  min-height: 100vh;
+  background-color: #0f1117;
+  color: #e6edf3;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  padding: 0 24px 48px;
+}
+
+.ax-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0 24px;
+  border-bottom: 1px solid #21262d;
+  margin-bottom: 28px;
+}
+
+.ax-header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #e6edf3;
+  letter-spacing: -0.3px;
+}
+
+.ax-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ax-badge {
+  font-size: 13px;
+  color: #8b949e;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 20px;
+  padding: 4px 12px;
+}
+
+.btn-primary {
+  background-color: #238636;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-primary:hover {
+  background-color: #2ea043;
+}
+
+.btn-secondary {
+  background-color: #21262d;
+  color: #e6edf3;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #30363d;
+}
+
+.btn-danger {
+  background-color: transparent;
+  color: #f85149;
+  border: 1px solid #f85149;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-danger:hover {
+  background-color: rgba(248, 81, 73, 0.1);
+}
+
+/* 테이블 */
+.ax-table-wrapper {
+  border: 1px solid #21262d;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ax-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ax-table thead {
+  background-color: #161b22;
+}
+
+.ax-table th {
+  padding: 12px 16px;
+  text-align: left;
+  color: #8b949e;
+  font-weight: 500;
+  font-size: 13px;
+  border-bottom: 1px solid #21262d;
+}
+
+.ax-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #21262d;
+  vertical-align: middle;
+  color: #e6edf3;
+}
+
+.ax-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ax-table tbody tr:hover {
+  background-color: #161b22;
+}
+
+.ax-table .project-link {
+  color: #58a6ff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.ax-table .project-link:hover {
+  text-decoration: underline;
+  color: #79c0ff;
+}
+
+.ax-table .text-muted {
+  color: #8b949e;
+  font-size: 13px;
+}
+
+.ax-table .actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 빈 상태 */
+.ax-empty {
+  text-align: center;
+  padding: 60px 0;
+  color: #8b949e;
+}
+
+.ax-empty p {
+  font-size: 15px;
+  margin-bottom: 16px;
+}
+
+/* 에러 */
+.ax-error {
+  background-color: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: 6px;
+  padding: 14px 18px;
+  color: #ffa198;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+/* 로딩 */
+.ax-loading {
+  text-align: center;
+  padding: 60px 0;
+  color: #8b949e;
+  font-size: 15px;
+}
+
+/* 모달 오버레이 */
+.ax-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+/* 모달 */
+.ax-modal {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 520px;
+  padding: 28px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.ax-modal h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #e6edf3;
+  margin-bottom: 22px;
+}
+
+.ax-form-group {
+  margin-bottom: 18px;
+}
+
+.ax-form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #8b949e;
+  margin-bottom: 6px;
+}
+
+.ax-form-group input,
+.ax-form-group textarea {
+  width: 100%;
+  background-color: #0f1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 9px 12px;
+  color: #e6edf3;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+  outline: none;
+}
+
+.ax-form-group input:focus,
+.ax-form-group textarea:focus {
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+}
+
+.ax-form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.ax-slug-hint {
+  font-size: 12px;
+  color: #8b949e;
+  margin-top: 4px;
+}
+
+.ax-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
