@@ -1,11 +1,11 @@
 import re
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database import get_db
 from models import AXProject
-from schemas import AXProjectCreate, AXProjectUpdate, AXProjectOut
+from schemas import AXProjectCreate, AXProjectUpdate, AXProjectOut, AXProjectSimpleCreate
 
 router = APIRouter()
 
@@ -45,35 +45,23 @@ async def create_ax_project(body: AXProjectCreate, db: AsyncSession = Depends(ge
 
 
 @router.post("/upload-html", response_model=AXProjectOut, status_code=201)
-async def upload_html_project(
-    name: str = Form(...),
-    developer: str = Form(None),
-    description: str = Form(None),
-    html_file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
-):
-    if not html_file.filename.lower().endswith('.html'):
+async def upload_html_project(body: AXProjectSimpleCreate, db: AsyncSession = Depends(get_db)):
+    if not body.html_filename.lower().endswith('.html'):
         raise HTTPException(status_code=400, detail="HTML(.html) 파일만 업로드 가능합니다.")
 
-    content = await html_file.read()
-    if len(content) > 10 * 1024 * 1024:
+    if len(body.html_content.encode('utf-8')) > 10 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="파일 크기는 10MB 이하여야 합니다.")
 
-    try:
-        html_text = content.decode('utf-8')
-    except UnicodeDecodeError:
-        raise HTTPException(status_code=400, detail="HTML 파일은 UTF-8 인코딩이어야 합니다.")
-
-    slug = await _unique_slug(_to_slug(name), db)
+    slug = await _unique_slug(_to_slug(body.name), db)
 
     project = AXProject(
-        name=name,
+        name=body.name,
         slug=slug,
-        description=description,
-        developer=developer,
+        description=body.description,
+        developer=body.developer,
         task_type='simple',
-        html_content=html_text,
-        html_filename=html_file.filename,
+        html_content=body.html_content,
+        html_filename=body.html_filename,
     )
     db.add(project)
     await db.commit()

@@ -76,7 +76,7 @@ export default function MainPage() {
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
-  const [modalMode, setModalMode] = useState('advanced') // 'advanced' | 'simple'
+  const [modalMode, setModalMode] = useState('advanced')
   const [editTarget, setEditTarget] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [htmlFile, setHtmlFile] = useState(null)
@@ -164,12 +164,19 @@ export default function MainPage() {
       if (!htmlFile) { setError('HTML 파일을 첨부해주세요.'); return }
       setSaving(true)
       try {
-        const fd = new FormData()
-        fd.append('name', form.name)
-        fd.append('html_file', htmlFile)
-        if (form.developer) fd.append('developer', form.developer)
-        if (form.description) fd.append('description', form.description)
-        await uploadHtmlProject(fd)
+        const htmlContent = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = (e) => resolve(e.target.result)
+          reader.onerror = () => reject(new Error('파일 읽기 실패'))
+          reader.readAsText(htmlFile, 'utf-8')
+        })
+        await uploadHtmlProject({
+          name: form.name,
+          html_content: htmlContent,
+          html_filename: htmlFile.name,
+          developer: form.developer || null,
+          description: form.description || null,
+        })
         closeModal()
         load()
       } catch (err) {
@@ -189,7 +196,6 @@ export default function MainPage() {
   }
 
   const fmt = (iso) => iso ? new Date(iso).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' }) : '-'
-
   const isSimple = (p) => p.task_type === 'simple'
 
   return (

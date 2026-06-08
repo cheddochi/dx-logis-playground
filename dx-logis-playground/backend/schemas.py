@@ -114,6 +114,13 @@ class AXProjectBase(BaseModel):
 class AXProjectCreate(AXProjectBase):
     pass
 
+class AXProjectSimpleCreate(BaseModel):
+    name: str
+    html_content: str
+    html_filename: str
+    developer: Optional[str] = None
+    description: Optional[str] = None
+
 class AXProjectUpdate(BaseModel):
     name: Optional[str] = None
     slug: Optional[str] = None
