@@ -71,11 +71,17 @@ async def upload_html_project(body: AXProjectSimpleCreate, db: AsyncSession = De
 
 @router.get("/{project_id}/html")
 async def get_project_html(project_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(AXProject).where(AXProject.id == project_id))
-    project = result.scalar_one_or_none()
-    if not project or project.task_type != 'simple' or not project.html_content:
+    result = await db.execute(
+        select(AXProject.task_type, AXProject.html_content)
+        .where(AXProject.id == project_id)
+    )
+    row = result.first()
+    if not row or row.task_type != 'simple' or not row.html_content:
         raise HTTPException(status_code=404, detail="HTML 콘텐츠를 찾을 수 없습니다.")
-    return Response(content=project.html_content, media_type="text/html; charset=utf-8")
+    content = row.html_content
+    if isinstance(content, str):
+        content = content.encode('utf-8')
+    return Response(content=content, media_type="text/html; charset=utf-8")
 
 
 @router.get("/{project_id}", response_model=AXProjectOut)
