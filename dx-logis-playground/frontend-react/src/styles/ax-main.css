@@ -295,6 +295,97 @@ font-family: inherit;
 }
 .ax-btn-outline:hover { background: #e8fafa; }
 
+/* ── 간단 등록 버튼 ── */
+.ax-btn-simple {
+display: inline-flex;
+align-items: center;
+justify-content: center;
+padding: 9px 20px;
+border-radius: 8px;
+border: 1.5px solid #7c3aed;
+background: #fff;
+color: #7c3aed;
+font-size: 14px;
+font-weight: 600;
+cursor: pointer;
+transition: background 0.15s;
+font-family: inherit;
+}
+.ax-btn-simple:hover { background: #f5f0ff; }
+
+/* ── 종류 배지 ── */
+.ax-type-badge {
+display: inline-flex;
+align-items: center;
+padding: 2px 9px;
+border-radius: 20px;
+font-size: 11px;
+font-weight: 700;
+white-space: nowrap;
+}
+.ax-type-badge--advanced {
+background: #e8fafa;
+color: #0e9090;
+}
+.ax-type-badge--simple {
+background: #f0e8ff;
+color: #7c3aed;
+}
+
+/* ── 등록 모드 탭 ── */
+.ax-mode-tabs {
+display: flex;
+gap: 0;
+border: 1.5px solid #e8e8e8;
+border-radius: 10px;
+overflow: hidden;
+margin-bottom: 24px;
+}
+.ax-mode-tab {
+flex: 1;
+padding: 9px 0;
+border: none;
+background: #fff;
+color: #888;
+font-size: 14px;
+font-weight: 600;
+cursor: pointer;
+transition: background 0.15s, color 0.15s;
+font-family: inherit;
+}
+.ax-mode-tab.active {
+background: #1bc6c6;
+color: #fff;
+}
+.ax-mode-tab:not(.active):hover { background: #f5f5f5; }
+
+/* ── 파일 드롭존 ── */
+.ax-file-drop {
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 14px 16px;
+border: 1.5px dashed #d0d0d0;
+border-radius: 10px;
+background: #fafafa;
+cursor: pointer;
+transition: border-color 0.15s, background 0.15s;
+font-size: 14px;
+color: #999;
+}
+.ax-file-drop:hover {
+border-color: #1bc6c6;
+background: #f8fffe;
+color: #0e9090;
+}
+.ax-file-drop.has-file {
+border-color: #7c3aed;
+background: #faf5ff;
+color: #7c3aed;
+}
+.ax-file-icon { font-size: 18px; }
+.ax-file-name { font-weight: 600; font-size: 13px; }
+
 /* ── 빈 상태 ── */
 .ax-empty {
 padding: 80px 40px;
@@ -490,97 +581,6 @@ display: flex;
 gap: 6px;
 white-space: nowrap;
 }
-
-/* ── 간단 등록 버튼 ── */
-.ax-btn-simple {
-display: inline-flex;
-align-items: center;
-justify-content: center;
-padding: 9px 20px;
-border-radius: 8px;
-border: 1.5px solid #7c3aed;
-background: #fff;
-color: #7c3aed;
-font-size: 14px;
-font-weight: 600;
-cursor: pointer;
-transition: background 0.15s;
-font-family: inherit;
-}
-.ax-btn-simple:hover { background: #f5f0ff; }
-
-/* ── 종류 배지 ── */
-.ax-type-badge {
-display: inline-flex;
-align-items: center;
-padding: 2px 9px;
-border-radius: 20px;
-font-size: 11px;
-font-weight: 700;
-white-space: nowrap;
-}
-.ax-type-badge--advanced {
-background: #e8fafa;
-color: #0e9090;
-}
-.ax-type-badge--simple {
-background: #f0e8ff;
-color: #7c3aed;
-}
-
-/* ── 등록 모드 탭 ── */
-.ax-mode-tabs {
-display: flex;
-gap: 0;
-border: 1.5px solid #e8e8e8;
-border-radius: 10px;
-overflow: hidden;
-margin-bottom: 24px;
-}
-.ax-mode-tab {
-flex: 1;
-padding: 9px 0;
-border: none;
-background: #fff;
-color: #888;
-font-size: 14px;
-font-weight: 600;
-cursor: pointer;
-transition: background 0.15s, color 0.15s;
-font-family: inherit;
-}
-.ax-mode-tab.active {
-background: #1bc6c6;
-color: #fff;
-}
-.ax-mode-tab:not(.active):hover { background: #f5f5f5; }
-
-/* ── 파일 드롭존 ── */
-.ax-file-drop {
-display: flex;
-align-items: center;
-gap: 10px;
-padding: 14px 16px;
-border: 1.5px dashed #d0d0d0;
-border-radius: 10px;
-background: #fafafa;
-cursor: pointer;
-transition: border-color 0.15s, background 0.15s;
-font-size: 14px;
-color: #999;
-}
-.ax-file-drop:hover {
-border-color: #1bc6c6;
-background: #f8fffe;
-color: #0e9090;
-}
-.ax-file-drop.has-file {
-border-color: #7c3aed;
-background: #faf5ff;
-color: #7c3aed;
-}
-.ax-file-icon { font-size: 18px; }
-.ax-file-name { font-weight: 600; font-size: 13px; }
 
 /* ── 가이드 패널 ── */
 .ax-guide-panel {
