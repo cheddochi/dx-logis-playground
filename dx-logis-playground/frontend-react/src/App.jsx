@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import MainPage from './pages/MainPage'
 import AxProjectPage from './pages/AxProjectPage'
+import HtmlViewerPage from './pages/HtmlViewerPage'
 
 // ── AX 과제별 커스텀 앱 import ──────────────────────────────────────
 // 신규 과제의 커스텀 페이지가 필요할 때만 추가 (없으면 기본 AxProjectPage로 표시)
@@ -21,6 +22,9 @@ export default function App() {
       <Route path="/ax/ecommerce-prediction/*" element={<EcommercePredictionApp />} />
       {/* <Route path="/ax/my-new-project/*" element={<MyNewProjectApp />} /> */}
       {/* ────────────────────────────────────────────────────────────────── */}
+
+      {/* 간단 등록 HTML 뷰어 */}
+      <Route path="/ax-html/:id" element={<HtmlViewerPage />} />
 
       {/* 커스텀 페이지 없는 과제는 기본 상세 페이지(AxProjectPage)로 자동 fallback */}
       <Route path="/ax/:slug" element={<AxProjectPage />} />

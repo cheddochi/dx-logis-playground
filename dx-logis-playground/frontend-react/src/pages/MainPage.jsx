@@ -1,6 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { listAxProjects, createAxProject, updateAxProject, deleteAxProject } from '../api/axProjectsClient'
+import {
+  listAxProjects,
+  createAxProject,
+  updateAxProject,
+  deleteAxProject,
+  uploadHtmlProject,
+} from '../api/axProjectsClient'
 import '../styles/ax-main.css'
 
 const emptyForm = { name: '', slug: '', description: '', developer: '' }
@@ -70,11 +76,14 @@ export default function MainPage() {
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
+  const [modalMode, setModalMode] = useState('advanced') // 'advanced' | 'simple'
   const [editTarget, setEditTarget] = useState(null)
   const [form, setForm] = useState(emptyForm)
+  const [htmlFile, setHtmlFile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [guideOpen, setGuideOpen] = useState(false)
+  const fileInputRef = useRef(null)
 
   const load = () => {
     setLoading(true)
@@ -86,16 +95,20 @@ export default function MainPage() {
 
   useEffect(() => { load() }, [])
 
-  const openCreate = () => {
+  const openCreate = (mode) => {
     setEditTarget(null)
+    setModalMode(mode)
     setForm(emptyForm)
+    setHtmlFile(null)
     setError('')
     setModalOpen(true)
   }
 
   const openEdit = (p) => {
     setEditTarget(p)
+    setModalMode(p.task_type || 'advanced')
     setForm({ name: p.name, slug: p.slug, description: p.description || '', developer: p.developer || '' })
+    setHtmlFile(null)
     setError('')
     setModalOpen(true)
   }
@@ -107,22 +120,61 @@ export default function MainPage() {
     setForm(f => ({ ...f, name, slug: editTarget ? f.slug : toSlug(name) }))
   }
 
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.name.toLowerCase().endsWith('.html')) {
+      setError('HTML(.html) 파일만 업로드 가능합니다.')
+      e.target.value = ''
+      return
+    }
+    setError('')
+    setHtmlFile(file)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.name.trim() || !form.slug.trim()) { setError('과제명과 슬러그는 필수입니다.'); return }
-    setSaving(true)
-    try {
-      if (editTarget) {
-        await updateAxProject(editTarget.id, form)
-      } else {
+    setError('')
+
+    if (editTarget) {
+      if (!form.name.trim() || !form.slug.trim()) { setError('과제명과 슬러그는 필수입니다.'); return }
+      setSaving(true)
+      try {
+        await updateAxProject(editTarget.id, { name: form.name, slug: form.slug, description: form.description, developer: form.developer })
+        closeModal()
+        load()
+      } catch (err) {
+        setError(err.response?.data?.detail || '저장에 실패했습니다.')
+      } finally { setSaving(false) }
+      return
+    }
+
+    if (modalMode === 'advanced') {
+      if (!form.name.trim() || !form.slug.trim()) { setError('과제명과 슬러그는 필수입니다.'); return }
+      setSaving(true)
+      try {
         await createAxProject(form)
-      }
-      closeModal()
-      load()
-    } catch (err) {
-      setError(err.response?.data?.detail || '저장에 실패했습니다.')
-    } finally {
-      setSaving(false)
+        closeModal()
+        load()
+      } catch (err) {
+        setError(err.response?.data?.detail || '저장에 실패했습니다.')
+      } finally { setSaving(false) }
+    } else {
+      if (!form.name.trim()) { setError('과제명은 필수입니다.'); return }
+      if (!htmlFile) { setError('HTML 파일을 첨부해주세요.'); return }
+      setSaving(true)
+      try {
+        const fd = new FormData()
+        fd.append('name', form.name)
+        fd.append('html_file', htmlFile)
+        if (form.developer) fd.append('developer', form.developer)
+        if (form.description) fd.append('description', form.description)
+        await uploadHtmlProject(fd)
+        closeModal()
+        load()
+      } catch (err) {
+        setError(err.response?.data?.detail || '저장에 실패했습니다.')
+      } finally { setSaving(false) }
     }
   }
 
@@ -138,6 +190,8 @@ export default function MainPage() {
 
   const fmt = (iso) => iso ? new Date(iso).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' }) : '-'
 
+  const isSimple = (p) => p.task_type === 'simple'
+
   return (
     <div className="ax-container">
       <header className="ax-header">
@@ -149,7 +203,10 @@ export default function MainPage() {
           <button className="ax-btn-outline" onClick={() => setGuideOpen(o => !o)}>
             {guideOpen ? '✕ 닫기' : '💡 과제 추가 방법'}
           </button>
-          <button className="ax-btn-primary" onClick={openCreate}>＋ 과제 등록</button>
+          <button className="ax-btn-simple" onClick={() => openCreate('simple')}>
+            📄 간단 등록
+          </button>
+          <button className="ax-btn-primary" onClick={() => openCreate('advanced')}>＋ 과제 등록</button>
         </div>
       </header>
 
@@ -158,8 +215,8 @@ export default function MainPage() {
           <div className="ax-guide-header">
             <h3 className="ax-guide-title">새 과제 페이지 추가하는 방법</h3>
             <p className="ax-guide-subtitle">
-              바이브 코딩으로 만든 결과물을 이 시스템에 연결하는 4단계입니다.<br />
-              전용 UI가 필요 없다면 <strong>1단계만</strong> 하면 됩니다.
+              <strong>📄 간단 등록</strong>: HTML 파일 한 장을 업로드하면 즉시 과제 페이지가 생성됩니다.<br />
+              <strong>＋ 과제 등록 (고급)</strong>: 바이브 코딩으로 만든 React 앱을 연결하는 4단계 방법입니다.
             </p>
           </div>
           <div className="ax-guide-steps">
@@ -201,6 +258,7 @@ export default function MainPage() {
             <thead>
               <tr>
                 <th>과제명</th>
+                <th>종류</th>
                 <th>과제설명</th>
                 <th>개발자</th>
                 <th>등록일시</th>
@@ -210,10 +268,21 @@ export default function MainPage() {
             </thead>
             <tbody>
               {projects.length === 0 ? (
-                <tr><td colSpan={6} className="ax-table-empty">등록된 과제가 없습니다.</td></tr>
+                <tr><td colSpan={7} className="ax-table-empty">등록된 과제가 없습니다.</td></tr>
               ) : projects.map(p => (
                 <tr key={p.id}>
-                  <td><Link to={`/ax/${p.slug}`} className="ax-link">{p.name}</Link></td>
+                  <td>
+                    {isSimple(p)
+                      ? <Link to={`/ax-html/${p.id}`} className="ax-link">{p.name}</Link>
+                      : <Link to={`/ax/${p.slug}`} className="ax-link">{p.name}</Link>
+                    }
+                  </td>
+                  <td>
+                    {isSimple(p)
+                      ? <span className="ax-type-badge ax-type-badge--simple">간단</span>
+                      : <span className="ax-type-badge ax-type-badge--advanced">고급</span>
+                    }
+                  </td>
                   <td className="ax-desc">{p.description || '-'}</td>
                   <td>{p.developer || '-'}</td>
                   <td>{fmt(p.created_at)}</td>
@@ -232,24 +301,76 @@ export default function MainPage() {
       {modalOpen && (
         <div className="ax-modal-overlay" onClick={closeModal}>
           <div className="ax-modal" onClick={e => e.stopPropagation()}>
-            <h2>{editTarget ? '과제 수정' : '과제 등록'}</h2>
+            <h2>
+              {editTarget
+                ? '과제 수정'
+                : modalMode === 'simple' ? '📄 간단 과제 등록' : '＋ 과제 등록 (고급)'}
+            </h2>
+
+            {!editTarget && (
+              <div className="ax-mode-tabs">
+                <button
+                  type="button"
+                  className={`ax-mode-tab ${modalMode === 'advanced' ? 'active' : ''}`}
+                  onClick={() => { setModalMode('advanced'); setError('') }}
+                >
+                  고급 등록
+                </button>
+                <button
+                  type="button"
+                  className={`ax-mode-tab ${modalMode === 'simple' ? 'active' : ''}`}
+                  onClick={() => { setModalMode('simple'); setError('') }}
+                >
+                  간단 등록
+                </button>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit}>
               <div className="ax-form-group">
                 <label>과제명 *</label>
                 <input value={form.name} onChange={handleNameChange} placeholder="전자상거래 수출입 예측 시스템" required />
               </div>
-              <div className="ax-form-group">
-                <label>슬러그 * <span className="ax-form-hint">URL 경로: /ax/슬러그 (영문·숫자·하이픈만)</span></label>
-                <input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} placeholder="ecommerce-prediction" required />
-              </div>
-              <div className="ax-form-group">
-                <label>과제설명</label>
-                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="과제에 대한 간단한 설명" />
-              </div>
+
+              {(modalMode === 'advanced' || editTarget?.task_type === 'advanced') && (
+                <div className="ax-form-group">
+                  <label>슬러그 * <span className="ax-form-hint">URL 경로: /ax/슬러그 (영문·숫자·하이픈만)</span></label>
+                  <input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} placeholder="ecommerce-prediction" required />
+                </div>
+              )}
+
               <div className="ax-form-group">
                 <label>개발자</label>
                 <input value={form.developer} onChange={e => setForm(f => ({ ...f, developer: e.target.value }))} placeholder="홍길동" />
               </div>
+
+              <div className="ax-form-group">
+                <label>과제설명</label>
+                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="과제에 대한 간단한 설명" />
+              </div>
+
+              {modalMode === 'simple' && !editTarget && (
+                <div className="ax-form-group">
+                  <label>HTML 파일 *</label>
+                  <div
+                    className={`ax-file-drop ${htmlFile ? 'has-file' : ''}`}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {htmlFile
+                      ? <><span className="ax-file-icon">📄</span><span className="ax-file-name">{htmlFile.name}</span></>
+                      : <><span className="ax-file-icon">📎</span><span>클릭하여 HTML 파일 선택</span></>
+                    }
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".html"
+                    style={{ display: 'none' }}
+                    onChange={handleFileChange}
+                  />
+                </div>
+              )}
+
               {error && <div className="ax-error">{error}</div>}
               <div className="ax-modal-footer">
                 <button type="button" className="ax-btn-sm" onClick={closeModal}>취소</button>
