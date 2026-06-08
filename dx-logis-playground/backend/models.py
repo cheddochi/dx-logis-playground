@@ -49,5 +49,8 @@ class AXProject(Base):
     slug: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     description: Mapped[str] = mapped_column(Text, nullable=True)
     developer: Mapped[str] = mapped_column(String(200), nullable=True)
+    task_type: Mapped[str] = mapped_column(String(20), nullable=False, default='advanced')
+    html_content: Mapped[str] = mapped_column(Text, nullable=True)
+    html_filename: Mapped[str] = mapped_column(String(200), nullable=True)
     created_at: Mapped[str] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[str] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

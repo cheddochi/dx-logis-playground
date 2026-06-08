@@ -12,6 +12,13 @@ async def lifespan(app: FastAPI):
     # 테이블 자동 생성 (운영환경에서는 Alembic 마이그레이션 권장)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # 기존 테이블에 신규 컬럼 추가 (없는 경우에만)
+        for sql in [
+            "ALTER TABLE ax_projects ADD COLUMN IF NOT EXISTS task_type VARCHAR(20) NOT NULL DEFAULT 'advanced'",
+            "ALTER TABLE ax_projects ADD COLUMN IF NOT EXISTS html_content TEXT",
+            "ALTER TABLE ax_projects ADD COLUMN IF NOT EXISTS html_filename VARCHAR(200)",
+        ]:
+            await conn.execute(text(sql))
 
     # 초기 AX 과제 seed: 전자상거래 수출입 예측 시스템
     async with AsyncSession(engine) as session:

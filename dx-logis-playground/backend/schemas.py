@@ -122,6 +122,8 @@ class AXProjectUpdate(BaseModel):
 
 class AXProjectOut(AXProjectBase):
     id: int
+    task_type: str = 'advanced'
+    html_filename: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
