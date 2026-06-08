@@ -157,7 +157,8 @@ export default function MainPage() {
         closeModal()
         load()
       } catch (err) {
-        setError(err.response?.data?.detail || '저장에 실패했습니다.')
+        const s = err.response?.status
+        setError(err.response?.data?.detail || `저장에 실패했습니다. (${s ?? 'Network Error'})`)
       } finally { setSaving(false) }
     } else {
       if (!form.name.trim()) { setError('과제명은 필수입니다.'); return }
@@ -180,7 +181,8 @@ export default function MainPage() {
         closeModal()
         load()
       } catch (err) {
-        setError(err.response?.data?.detail || '저장에 실패했습니다.')
+        const s = err.response?.status
+        setError(err.response?.data?.detail || `저장에 실패했습니다. (HTTP ${s ?? 'Network Error'})`)
       } finally { setSaving(false) }
     }
   }
