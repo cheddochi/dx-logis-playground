@@ -47,27 +47,28 @@ const GUIDE_STEPS = [
   },
   {
     step: '3',
-    title: 'GitHub에 파일 올리기',
+    title: '사내 GitHub에 파일 올리기',
     color: '#9775FA',
     badge: '선택',
-    desc: 'GitHub 웹사이트에서 파일을 만들고 코드를 붙여넣으면 끝!',
+    desc: '사내 GitHub Enterprise에서 파일을 만들고 코드를 붙여넣으면 끝!',
     items: [
-      { type: 'normal', text: 'github.com → my-project → frontend-react/src/ax_projects/ 폴더 진입' },
+      { type: 'normal', text: 'logis-playground-Frontend 리포지터리 → src/ax_projects/ 폴더 진입' },
       { type: 'normal', text: '"Add file" → "Create new file" 클릭' },
       { type: 'tip',    text: '파일명에 {슬러그}/index.jsx 입력 (예: my-project/index.jsx)' },
-      { type: 'normal', text: '2단계 코드 붙여넣기 → "Commit changes" 클릭' },
+      { type: 'normal', text: '2단계 코드 붙여넣기 → development 브랜치로 "Commit changes" 클릭' },
     ],
   },
   {
     step: '4',
-    title: '라우트 연결 → 자동 배포',
+    title: '라우트 연결 → Jenkins 배포',
     color: '#F59E0B',
     badge: '선택',
-    desc: 'AI한테 한 마디면 Railway가 자동으로 배포합니다.',
+    desc: 'App.jsx 수정 후 Jenkins에서 배포를 실행하면 SCP에 반영됩니다.',
     items: [
-      { type: 'normal', text: 'GitHub에서 App.jsx 파일을 열고 AI에게 요청:' },
+      { type: 'normal', text: 'logis-playground-Frontend 리포지터리에서 src/App.jsx 파일 열기' },
       { type: 'prompt', text: '"App.jsx에서 [슬러그] 라우트 추가해줘. 주석 가이드 보고 따라해."' },
-      { type: 'done',   text: 'Commit하면 Railway가 자동 배포 시작! 2~3분 후 완료 🚀' },
+      { type: 'normal', text: 'development 브랜치로 Commit → Jenkins 접속 → 프론트엔드 인스턴스 선택' },
+      { type: 'done',   text: 'Jenkins에서 Deployment 실행 → 빌드 & 배포 완료!' },
     ],
   },
 ]
@@ -224,7 +225,7 @@ export default function MainPage() {
             <h3 className="ax-guide-title">새 과제 페이지 추가하는 방법</h3>
             <p className="ax-guide-subtitle">
               <strong>📄 간단 등록</strong>: HTML 파일 한 장을 업로드하면 즉시 과제 페이지가 생성됩니다.<br />
-              <strong>＋ 과제 등록 (고급)</strong>: 바이브 코딩으로 만든 React 앱을 연결하는 4단계 방법입니다.
+              <strong>＋ 과제 등록 (고급)</strong>: AI 바이브 코딩으로 만든 React 앱을 사내 GitHub → Jenkins 배포로 연결하는 4단계 방법입니다.
             </p>
           </div>
           <div className="ax-guide-steps">
@@ -251,7 +252,8 @@ export default function MainPage() {
           </div>
           <div className="ax-guide-footer">
             📁 템플릿 파일: <code>src/ax_projects/_template/index.jsx</code> &nbsp;|&nbsp;
-            🔀 라우트 순서: static route를 <code>/ax/:slug</code> 보다 반드시 위에 배치
+            🔀 라우트 순서: static route를 <code>/ax/:slug</code> 보다 반드시 위에 배치 &nbsp;|&nbsp;
+            🌿 대상 브랜치: <code>development</code> → Jenkins Deployment 실행
           </div>
         </div>
       )}
