@@ -136,3 +136,7 @@ class AXProjectOut(AXProjectBase):
 
     class Config:
         from_attributes = True
+
+
+class AXProjectDetail(AXProjectOut):
+    html_content: Optional[str] = None

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database import get_db
 from models import AXProject
-from schemas import AXProjectCreate, AXProjectUpdate, AXProjectOut, AXProjectSimpleCreate
+from schemas import AXProjectCreate, AXProjectUpdate, AXProjectOut, AXProjectSimpleCreate, AXProjectDetail
 
 router = APIRouter()
 
@@ -84,7 +84,7 @@ async def get_project_html(project_id: int, db: AsyncSession = Depends(get_db)):
     return Response(content=content, media_type="text/html; charset=utf-8")
 
 
-@router.get("/{project_id}", response_model=AXProjectOut)
+@router.get("/{project_id}", response_model=AXProjectDetail)
 async def get_ax_project(project_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(AXProject).where(AXProject.id == project_id))
     project = result.scalar_one_or_none()
