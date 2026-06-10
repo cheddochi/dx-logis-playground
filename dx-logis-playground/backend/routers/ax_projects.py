@@ -1,7 +1,8 @@
 import re
 import uuid
+import logging
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -10,16 +11,25 @@ from models import AXProject
 from schemas import AXProjectCreate, AXProjectUpdate, AXProjectOut, AXProjectSimpleCreate, AXProjectDetail
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _html_dir() -> Path:
-    path = Path(get_settings().ax_html_dir)
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+    return Path(get_settings().ax_html_dir)
 
 
 def _html_file_path(project_id: int) -> Path:
     return _html_dir() / f"{project_id}.html"
+
+
+def _write_html_file(project_id: int, html_content: str) -> None:
+    """HTML을 디스크에 저장 (best-effort). 파일시스템 쓰기가 불가한 환경에서도 등록 자체는 실패하지 않도록 함."""
+    try:
+        dir_path = _html_dir()
+        dir_path.mkdir(parents=True, exist_ok=True)
+        (dir_path / f"{project_id}.html").write_text(html_content, encoding='utf-8')
+    except OSError:
+        logger.warning("HTML 파일 저장 실패 (project_id=%s)", project_id, exc_info=True)
 
 
 async def sync_html_files_to_disk(db: AsyncSession) -> None:
@@ -31,7 +41,7 @@ async def sync_html_files_to_disk(db: AsyncSession) -> None:
     for row in result:
         file_path = _html_file_path(row.id)
         if not file_path.exists():
-            file_path.write_text(row.html_content, encoding='utf-8')
+            _write_html_file(row.id, row.html_content)
 
 
 def _to_slug(name: str) -> str:
@@ -91,7 +101,7 @@ async def upload_html_project(body: AXProjectSimpleCreate, db: AsyncSession = De
     await db.commit()
     await db.refresh(project)
 
-    _html_file_path(project.id).write_text(body.html_content, encoding='utf-8')
+    _write_html_file(project.id, body.html_content)
 
     return project
 
@@ -99,17 +109,17 @@ async def upload_html_project(body: AXProjectSimpleCreate, db: AsyncSession = De
 @router.get("/{project_id}/html")
 async def get_project_html(project_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
-        select(AXProject.task_type).where(AXProject.id == project_id)
+        select(AXProject.task_type, AXProject.html_content).where(AXProject.id == project_id)
     )
     row = result.first()
-    if not row or row.task_type != 'simple':
+    if not row or row.task_type != 'simple' or not row.html_content:
         raise HTTPException(status_code=404, detail="HTML 콘텐츠를 찾을 수 없습니다.")
 
     file_path = _html_file_path(project_id)
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="HTML 파일을 찾을 수 없습니다.")
+    if file_path.exists():
+        return FileResponse(file_path, media_type="text/html; charset=utf-8")
 
-    return FileResponse(file_path, media_type="text/html; charset=utf-8")
+    return Response(content=row.html_content.encode('utf-8'), media_type="text/html; charset=utf-8")
 
 
 @router.get("/{project_id}", response_model=AXProjectDetail)
@@ -145,4 +155,7 @@ async def delete_ax_project(project_id: int, db: AsyncSession = Depends(get_db))
     await db.delete(project)
     await db.commit()
 
-    _html_file_path(project_id).unlink(missing_ok=True)
+    try:
+        _html_file_path(project_id).unlink(missing_ok=True)
+    except OSError:
+        logger.warning("HTML 파일 삭제 실패 (project_id=%s)", project_id, exc_info=True)
