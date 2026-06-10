@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getAxProject, API_BASE } from '../api/axProjectsClient'
+import { getAxProject } from '../api/axProjectsClient'
 
 export default function HtmlViewerPage() {
   const { id } = useParams()
   const [project, setProject] = useState(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    getAxProject(id).catch(() => null).then(setProject)
+    getAxProject(id).then(setProject).catch(() => setError('프로젝트를 불러올 수 없습니다.'))
   }, [id])
 
   return (
@@ -35,11 +36,22 @@ export default function HtmlViewerPage() {
           </span>
         )}
       </div>
-      <iframe
-        src={`${API_BASE}/ax-projects/${id}/html`}
-        style={{ flex: 1, width: '100%', border: 'none' }}
-        title={project?.name || 'HTML 과제 페이지'}
-      />
+      {error ? (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e53e3e', fontSize: '14px' }}>
+          {error}
+        </div>
+      ) : project ? (
+        <iframe
+          srcDoc={project.html_content || ''}
+          style={{ flex: 1, width: '100%', border: 'none' }}
+          title={project.name || 'HTML 과제 페이지'}
+          sandbox="allow-scripts allow-same-origin"
+        />
+      ) : (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa', fontSize: '14px' }}>
+          불러오는 중...
+        </div>
+      )}
     </div>
   )
 }

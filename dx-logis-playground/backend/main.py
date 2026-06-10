@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import engine, Base, get_settings
 from models import AXProject
 from routers import trade, predictions, reports, ax_projects
+from routers.ax_projects import sync_html_files_to_disk
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,6 +34,9 @@ async def lifespan(app: FastAPI):
                 developer="cheDominic",
             ))
             await session.commit()
+
+        # 간단 등록 과제의 HTML 파일을 디스크에 동기화
+        await sync_html_files_to_disk(session)
 
     yield
     await engine.dispose()

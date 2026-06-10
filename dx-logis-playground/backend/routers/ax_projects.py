@@ -1,13 +1,37 @@
 import re
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Response
+from pathlib import Path
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from database import get_db
+from database import get_db, get_settings
 from models import AXProject
-from schemas import AXProjectCreate, AXProjectUpdate, AXProjectOut, AXProjectSimpleCreate
+from schemas import AXProjectCreate, AXProjectUpdate, AXProjectOut, AXProjectSimpleCreate, AXProjectDetail
 
 router = APIRouter()
+
+
+def _html_dir() -> Path:
+    path = Path(get_settings().ax_html_dir)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _html_file_path(project_id: int) -> Path:
+    return _html_dir() / f"{project_id}.html"
+
+
+async def sync_html_files_to_disk(db: AsyncSession) -> None:
+    """DB에 저장된 간단 등록 과제의 HTML을 디스크에 동기화 (재배포로 디스크가 초기화된 경우 복구)."""
+    result = await db.execute(
+        select(AXProject.id, AXProject.html_content)
+        .where(AXProject.task_type == 'simple', AXProject.html_content.is_not(None))
+    )
+    for row in result:
+        file_path = _html_file_path(row.id)
+        if not file_path.exists():
+            file_path.write_text(row.html_content, encoding='utf-8')
 
 
 def _to_slug(name: str) -> str:
@@ -66,25 +90,29 @@ async def upload_html_project(body: AXProjectSimpleCreate, db: AsyncSession = De
     db.add(project)
     await db.commit()
     await db.refresh(project)
+
+    _html_file_path(project.id).write_text(body.html_content, encoding='utf-8')
+
     return project
 
 
 @router.get("/{project_id}/html")
 async def get_project_html(project_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
-        select(AXProject.task_type, AXProject.html_content)
-        .where(AXProject.id == project_id)
+        select(AXProject.task_type).where(AXProject.id == project_id)
     )
     row = result.first()
-    if not row or row.task_type != 'simple' or not row.html_content:
+    if not row or row.task_type != 'simple':
         raise HTTPException(status_code=404, detail="HTML 콘텐츠를 찾을 수 없습니다.")
-    content = row.html_content
-    if isinstance(content, str):
-        content = content.encode('utf-8')
-    return Response(content=content, media_type="text/html; charset=utf-8")
+
+    file_path = _html_file_path(project_id)
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="HTML 파일을 찾을 수 없습니다.")
+
+    return FileResponse(file_path, media_type="text/html; charset=utf-8")
 
 
-@router.get("/{project_id}", response_model=AXProjectOut)
+@router.get("/{project_id}", response_model=AXProjectDetail)
 async def get_ax_project(project_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(AXProject).where(AXProject.id == project_id))
     project = result.scalar_one_or_none()
@@ -116,3 +144,5 @@ async def delete_ax_project(project_id: int, db: AsyncSession = Depends(get_db))
         raise HTTPException(status_code=404, detail="Project not found")
     await db.delete(project)
     await db.commit()
+
+    _html_file_path(project_id).unlink(missing_ok=True)
