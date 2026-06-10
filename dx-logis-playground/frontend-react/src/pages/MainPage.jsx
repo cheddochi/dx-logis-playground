@@ -6,6 +6,7 @@ import {
   updateAxProject,
   deleteAxProject,
   uploadHtmlProject,
+  API_BASE,
 } from '../api/axProjectsClient'
 import '../styles/ax-main.css'
 
@@ -298,6 +299,11 @@ export default function MainPage() {
                   <td>{fmt(p.created_at)}</td>
                   <td>{fmt(p.updated_at)}</td>
                   <td className="ax-actions">
+                    {isSimple(p) && (
+                      <a className="ax-btn-sm" href={`${API_BASE}/ax-projects/${p.id}/html`} target="_blank" rel="noopener noreferrer">
+                        새 탭에서 보기
+                      </a>
+                    )}
                     <button className="ax-btn-sm" onClick={() => openEdit(p)}>수정</button>
                     <button className="ax-btn-sm ax-btn-danger" onClick={() => handleDelete(p)}>삭제</button>
                   </td>

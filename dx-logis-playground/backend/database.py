@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://postgres.lijslvcfpdhghwmuhxhm:[Dpslrmak81!!]@aws-1-ap-northeast-2.pooler.supabase.com:5432/ecommerce_forecast"
     anthropic_api_key: str = ""
     allowed_origins: str = "http://localhost:5173,http://localhost:3000"
+    ax_html_dir: str = "static_html"
 
     class Config:
         env_file = ".env"
