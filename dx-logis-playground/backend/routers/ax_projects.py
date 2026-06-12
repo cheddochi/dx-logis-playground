@@ -33,15 +33,22 @@ def _write_html_file(project_id: int, html_content: str) -> None:
 
 
 async def sync_html_files_to_disk(db: AsyncSession) -> None:
-    """DB에 저장된 간단 등록 과제의 HTML을 디스크에 동기화 (재배포로 디스크가 초기화된 경우 복구)."""
+    """DB에 저장된 과제의 업로드 HTML을 디스크에 동기화 (재배포로 디스크가 초기화된 경우 복구)."""
     result = await db.execute(
         select(AXProject.id, AXProject.html_content)
-        .where(AXProject.task_type == 'simple', AXProject.html_content.is_not(None))
+        .where(AXProject.html_content.is_not(None))
     )
     for row in result:
         file_path = _html_file_path(row.id)
         if not file_path.exists():
             _write_html_file(row.id, row.html_content)
+
+
+def _validate_html_upload(filename: str | None, content: str) -> None:
+    if not (filename or '').lower().endswith('.html'):
+        raise HTTPException(status_code=400, detail="HTML(.html) 파일만 업로드 가능합니다.")
+    if len(content.encode('utf-8')) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="파일 크기는 10MB 이하여야 합니다.")
 
 
 def _to_slug(name: str) -> str:
@@ -71,20 +78,23 @@ async def list_ax_projects(db: AsyncSession = Depends(get_db)):
 
 @router.post("/", response_model=AXProjectOut, status_code=201)
 async def create_ax_project(body: AXProjectCreate, db: AsyncSession = Depends(get_db)):
+    if body.html_content:
+        _validate_html_upload(body.html_filename, body.html_content)
+
     project = AXProject(**body.model_dump(), task_type='advanced')
     db.add(project)
     await db.commit()
     await db.refresh(project)
+
+    if body.html_content:
+        _write_html_file(project.id, body.html_content)
+
     return project
 
 
 @router.post("/upload-html", response_model=AXProjectOut, status_code=201)
 async def upload_html_project(body: AXProjectSimpleCreate, db: AsyncSession = Depends(get_db)):
-    if not body.html_filename.lower().endswith('.html'):
-        raise HTTPException(status_code=400, detail="HTML(.html) 파일만 업로드 가능합니다.")
-
-    if len(body.html_content.encode('utf-8')) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="파일 크기는 10MB 이하여야 합니다.")
+    _validate_html_upload(body.html_filename, body.html_content)
 
     slug = await _unique_slug(_to_slug(body.name), db)
 
@@ -109,10 +119,10 @@ async def upload_html_project(body: AXProjectSimpleCreate, db: AsyncSession = De
 @router.get("/{project_id}/html")
 async def get_project_html(project_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
-        select(AXProject.task_type, AXProject.html_content).where(AXProject.id == project_id)
+        select(AXProject.html_content).where(AXProject.id == project_id)
     )
     row = result.first()
-    if not row or row.task_type != 'simple' or not row.html_content:
+    if not row or not row.html_content:
         raise HTTPException(status_code=404, detail="HTML 콘텐츠를 찾을 수 없습니다.")
 
     file_path = _html_file_path(project_id)

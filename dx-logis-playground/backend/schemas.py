@@ -112,7 +112,8 @@ class AXProjectBase(BaseModel):
     developer: Optional[str] = None
 
 class AXProjectCreate(AXProjectBase):
-    pass
+    html_content: Optional[str] = None
+    html_filename: Optional[str] = None
 
 class AXProjectSimpleCreate(BaseModel):
     name: str

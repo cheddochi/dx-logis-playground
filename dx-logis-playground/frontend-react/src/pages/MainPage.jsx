@@ -20,6 +20,15 @@ function toSlug(str) {
     .replace(/^-+|-+$/g, '')
 }
 
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => resolve(e.target.result)
+    reader.onerror = () => reject(new Error('파일 읽기 실패'))
+    reader.readAsText(file, 'utf-8')
+  })
+}
+
 const GUIDE_STEPS = [
   {
     step: '1',
@@ -31,6 +40,7 @@ const GUIDE_STEPS = [
       { type: 'normal', text: '"＋ 과제 등록" 버튼 클릭 → 과제명 입력' },
       { type: 'tip',    text: '과제명을 입력하면 슬러그(URL 주소)가 자동으로 만들어져요' },
       { type: 'normal', text: '저장하면 /ax/{슬러그} 주소와 기본 상세 페이지가 즉시 생성됩니다' },
+      { type: 'tip',    text: 'React 앱은 vite-plugin-singlefile로 빌드한 단일 index.html을 함께 첨부하면 GitHub/Jenkins 없이 /ax/{슬러그}에서 바로 그 화면이 보여요 (라우팅은 HashRouter 권장)' },
       { type: 'done',   text: '전용 대시보드가 필요 없다면 여기서 끝! 2·3·4단계 건너뛰기 OK' },
     ],
   },
@@ -155,7 +165,12 @@ export default function MainPage() {
       if (!form.name.trim() || !form.slug.trim()) { setError('과제명과 슬러그는 필수입니다.'); return }
       setSaving(true)
       try {
-        await createAxProject(form)
+        const payload = { ...form }
+        if (htmlFile) {
+          payload.html_content = await readFileAsText(htmlFile)
+          payload.html_filename = htmlFile.name
+        }
+        await createAxProject(payload)
         closeModal()
         load()
       } catch (err) {
@@ -167,12 +182,7 @@ export default function MainPage() {
       if (!htmlFile) { setError('HTML 파일을 첨부해주세요.'); return }
       setSaving(true)
       try {
-        const htmlContent = await new Promise((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = (e) => resolve(e.target.result)
-          reader.onerror = () => reject(new Error('파일 읽기 실패'))
-          reader.readAsText(htmlFile, 'utf-8')
-        })
+        const htmlContent = await readFileAsText(htmlFile)
         await uploadHtmlProject({
           name: form.name,
           html_content: htmlContent,
@@ -226,7 +236,7 @@ export default function MainPage() {
             <h3 className="ax-guide-title">새 과제 페이지 추가하는 방법</h3>
             <p className="ax-guide-subtitle">
               <strong>📄 간단 등록</strong>: HTML 파일 한 장을 업로드하면 즉시 과제 페이지가 생성됩니다.<br />
-              <strong>＋ 과제 등록 (고급)</strong>: AI 바이브 코딩으로 만든 React 앱을 사내 GitHub → Jenkins 배포로 연결하는 4단계 방법입니다.
+              <strong>＋ 과제 등록 (고급)</strong>: 과제 정보를 등록하고, AI 바이브 코딩으로 만든 React 앱을 HTML 파일로 함께 업로드하면 즉시 페이지가 생성됩니다. 메인 화면과 디자인·내비게이션을 공유해야 한다면 사내 GitHub → Jenkins 배포로 연결하는 2~4단계를 진행하세요.
             </p>
           </div>
           <div className="ax-guide-steps">
@@ -299,7 +309,7 @@ export default function MainPage() {
                   <td>{fmt(p.created_at)}</td>
                   <td>{fmt(p.updated_at)}</td>
                   <td className="ax-actions">
-                    {isSimple(p) && (
+                    {p.html_filename && (
                       <a className="ax-btn-sm" href={`${API_BASE}/ax-projects/${p.id}/html`} target="_blank" rel="noopener noreferrer">
                         새 탭에서 보기
                       </a>
@@ -365,9 +375,14 @@ export default function MainPage() {
                 <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="과제에 대한 간단한 설명" />
               </div>
 
-              {modalMode === 'simple' && !editTarget && (
+              {(modalMode === 'simple' || modalMode === 'advanced') && !editTarget && (
                 <div className="ax-form-group">
-                  <label>HTML 파일 *</label>
+                  <label>
+                    {modalMode === 'simple' ? 'HTML 파일 *' : 'HTML 파일 (선택)'}
+                    {modalMode === 'advanced' && (
+                      <span className="ax-form-hint">업로드하면 GitHub/Jenkins 배포 없이 /ax/슬러그에서 바로 결과물을 확인할 수 있어요</span>
+                    )}
+                  </label>
                   <div
                     className={`ax-file-drop ${htmlFile ? 'has-file' : ''}`}
                     onClick={() => fileInputRef.current?.click()}

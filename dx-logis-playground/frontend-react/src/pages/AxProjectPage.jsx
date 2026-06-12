@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { listAxProjects } from '../api/axProjectsClient'
+import { listAxProjects, getAxProject } from '../api/axProjectsClient'
 import '../styles/ax-main.css'
 
 function fmt(dateStr) {
@@ -18,18 +18,60 @@ export default function AxProjectPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    setLoading(true)
+    setError('')
+    setProject(null)
     listAxProjects()
       .then(list => {
         setProjects(list)
         const found = list.find(p => p.slug === slug)
-        if (found) setProject(found)
-        else setError('과제를 찾을 수 없습니다.')
+        if (!found) {
+          setError('과제를 찾을 수 없습니다.')
+          return
+        }
+        return getAxProject(found.id).then(setProject)
       })
       .catch(() => setError('데이터를 불러오지 못했습니다.'))
       .finally(() => setLoading(false))
   }, [slug])
 
   const idx = projects.findIndex(p => p.slug === slug)
+
+  if (project?.html_content) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: "'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif" }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '16px',
+          padding: '0 24px', height: '52px', flexShrink: 0,
+          borderBottom: '1px solid #f0f0f0', background: '#fff',
+        }}>
+          <Link to="/" style={{ color: '#1bc6c6', fontWeight: 600, textDecoration: 'none', fontSize: '14px', whiteSpace: 'nowrap' }}>
+            ← 목록으로
+          </Link>
+          <span style={{ width: '1px', height: '16px', background: '#e8e8e8' }} />
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            padding: '2px 8px', borderRadius: '20px', background: '#e6fffa',
+            color: '#0d9488', fontSize: '11px', fontWeight: 700, flexShrink: 0,
+          }}>고급</span>
+          <span style={{ fontSize: '15px', fontWeight: 700, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {project.name}
+          </span>
+          {project.html_filename && (
+            <span style={{ fontSize: '12px', color: '#bbb', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
+              {project.html_filename}
+            </span>
+          )}
+        </div>
+        <iframe
+          srcDoc={project.html_content}
+          style={{ flex: 1, width: '100%', border: 'none' }}
+          title={project.name || 'AX 과제 페이지'}
+          sandbox="allow-scripts allow-same-origin"
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="ax-wrap">
